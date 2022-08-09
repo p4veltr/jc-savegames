@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class Main {
@@ -10,6 +11,11 @@ public class Main {
         GameProgress player2 = new GameProgress(80, 70, 30, 5200);
         GameProgress player3 = new GameProgress(13, 28, 28, 6800);
 
+        System.out.println("Дано:");
+        System.out.println("player1: " + player1);
+        System.out.println("player2: " + player2);
+        System.out.println("player3: " + player3);
+
         saveGame(saveDir + "//player1.dat", player1);
         saveGame(saveDir + "//player2.dat", player2);
         saveGame(saveDir + "//player3.dat", player3);
@@ -19,6 +25,43 @@ public class Main {
                 saveDir + "//player2.dat",
                 saveDir + "//player3.dat")) {
             cleanupSaveDir(saveDir);
+        } else {
+            return;
+        }
+
+        openZip(saveDir + "//allPlayersProgress.zip", saveDir);
+        System.out.println("player2: " + openProgress(saveDir + "//player2.dat"));
+    }
+
+    private static GameProgress openProgress(String file) {
+        GameProgress gameProgress = null;
+        try (FileInputStream fis = new FileInputStream(file);
+        ObjectInputStream ois = new ObjectInputStream(fis)) {
+            gameProgress = (GameProgress) ois.readObject();
+            System.out.println("Восстановлено сохранение из файла " + file);
+        } catch (Exception e) {
+            System.out.println("Ошибка! Не удалось восстановить сохранение! " + e);
+        }
+        return gameProgress;
+    }
+
+    private static void openZip(String arcPath, String destPath) {
+        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(arcPath))) {
+            ZipEntry entry;
+            String name;
+            while ((entry = zin.getNextEntry()) != null) {
+                name = entry.getName();
+                FileOutputStream fout = new FileOutputStream(name);
+                for (int c = zin.read(); c != -1; c = zin.read()) {
+                    fout.write(c);
+                }
+                fout.flush();
+                zin.closeEntry();
+                fout.close();
+                System.out.println("Файл " + name + " извлечён из архива");
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка! Не удалось извлечь сохранение из архива! " + e);
         }
     }
 
